@@ -1,0 +1,18 @@
+{
+    "title": "Tiko",
+    "config": {
+        "step": {
+            "user": {
+                "title": "Setting up your account",
+                "description": "Enter your Tiko account information.",
+                "data": {
+                    "username": "Email",
+                    "password": "Password"
+                }
+            }
+        },
+        "error": {
+            "auth": "Your email or password are incorrect."
+        }
+    }
+}
