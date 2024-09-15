@@ -22,41 +22,55 @@ query HA_GET_DATA {
     rooms {
       id
       name
-      type
-      color
-      heaters
-      hasTemperatureSchedule
       currentTemperatureDegrees
       targetTemperatureDegrees
       humidity
-      sensors
       mode {
         boost
         absence
         frost
         disableHeating
-        passive
-        summer
-        bypass
         __typename
       }
       status {
-        disconnected
-        heaterDisconnected
         heatingOperating
         sensorBatteryLow
-        sensorDisconnected
-        temporaryAdjustment
         __typename
       }
-      devices {
-        id
-        code
-        type
-        name
-        mac
-        __typename
-      }
+      __typename
+    }
+    __typename
+  }
+}
+"""
+
+MUTATION_SET_ROOM_MODE = """
+mutation HA_SET_ROOM_MODE($propertyId: Int!, $roomId: Int!, $mode: String!) {
+  setRoomMode(input: {propertyId: $propertyId, roomId: $roomId, mode: $mode}) {
+    id
+    mode {
+      boost
+      absence
+      frost
+      disableHeating
+      __typename
+    }
+    __typename
+  }
+}
+"""
+
+
+MUTATION_SET_ROOM_TEMPERATURE = """
+mutation HA_SET_ROOM_TEMPERATURE($propertyId: Int!, $roomId: Int!, $temperature: Float!) {
+  setRoomAdjustTemperature(
+    input: {propertyId: $propertyId, roomId: $roomId, temperature: $temperature}
+  ) {
+    id
+    adjustTemperature {
+      active
+      endDateTime
+      temperature
       __typename
     }
     __typename

@@ -8,7 +8,7 @@ UPDATE_INTERVAL = timedelta(seconds=30)
 
 
 async def async_setup_entry(hass, config_entry):
-    """Configure le component Tiko via une entrée de configuration."""
+    """Setup Tiko component"""
     hass.data.setdefault(DOMAIN, {})
 
     # Get entry id
@@ -26,7 +26,7 @@ async def async_setup_entry(hass, config_entry):
     # Init entities
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setups(
-            config_entry, ["sensor", "switch"]
+            config_entry, ["sensor", "climate"]
         )
     )
 
@@ -35,8 +35,13 @@ async def async_setup_entry(hass, config_entry):
 
 
 async def async_unload_entry(hass, config_entry):
-    entry_id = config_entry.entry_id
+    """Unload a config entry."""
 
-    # Nettoyer les données spécifiques à cette entrée
-    # if entry_id in hass.data[DOMAIN]:
-    #    hass.data[DOMAIN].pop(entry_id)
+    # Get entry id
+    entry_id = config_entry.entry_id
+    if not isinstance(entry_id, str):
+        entry_id = str(entry_id)
+
+    # Clean HASS object
+    if entry_id in hass.data[DOMAIN]:
+        hass.data[DOMAIN].pop(entry_id)

@@ -2,21 +2,16 @@ import voluptuous as vol
 from .api import login
 from homeassistant import config_entries
 from homeassistant.core import callback
-import homeassistant.helpers.config_validation as cv
 from homeassistant.const import (
     CONF_USERNAME,
     CONF_PASSWORD,
 )
 
-import logging
-
 from .const import DOMAIN
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class TikoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle the Tiko configuration flow."""
+    """Handle Tiko configuration flow."""
 
     VERSION = 1
 
@@ -58,16 +53,16 @@ class TikoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        """Retourne l'option pour gérer la configuration après le setup."""
+        """Returns the TikoOptionsFlow to allow edits."""
         return TikoOptionsFlow(config_entry)
 
 
 class TikoOptionsFlow(config_entries.OptionsFlow):
-    """Gère le flow d'options pour Tiko."""
+    """Options flow for Tiko."""
 
     def __init__(self, config_entry):
         self.config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
-        """Gère les options supplémentaires (si nécessaire)."""
+        """Manage the options."""
         return self.async_show_form(step_id="init")

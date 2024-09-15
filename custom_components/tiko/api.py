@@ -1,7 +1,12 @@
 import aiohttp
 import logging
 
-from .queries import MUTATION_LOGIN, QUERY_GET_DATA
+from .queries import (
+    MUTATION_LOGIN,
+    MUTATION_SET_ROOM_MODE,
+    MUTATION_SET_ROOM_TEMPERATURE,
+    QUERY_GET_DATA,
+)
 
 GQL_API_URL = "https://particuliers-tiko.fr/api/v3/graphql/"
 _LOGGER = logging.getLogger(__name__)
@@ -53,7 +58,6 @@ async def gqlCall(query, variables=None, tokens=None):
                     outTokens["member_space"] = response.cookies[
                         "USER_SESSION_member_space"
                     ].value
-                # _LOGGER.info("Tokens: %s", outTokens)
 
                 # Get JSON response
                 response_data = await response.json()
@@ -79,7 +83,6 @@ async def login(email, password):
 
     # Call login mutation
     [reqTokens, data] = await gqlCall(MUTATION_LOGIN, variables)
-    # _LOGGER.error("Data: %s", data)
 
     # Login failed
     if data["data"]["logIn"] is None:
@@ -92,7 +95,6 @@ async def login(email, password):
         "member_space": reqTokens["member_space"],
         "csrf_token": reqTokens["csrf_token"],
     }
-    _LOGGER.error("Tokens: %s", tokens)
 
     return tokens
 
@@ -102,6 +104,40 @@ async def getData(tokens=None):
 
     # Call login mutation
     [_, data] = await gqlCall(QUERY_GET_DATA, {}, tokens)
-    # _LOGGER.error("Data: %s", data)
+    _LOGGER.info("Data: %s", data)
+
+    return data
+
+
+async def setRoomMode(tokens, propertyId, roomId, mode):
+    """Set the room mode."""
+
+    # Prepare variables
+    variables = {
+        "propertyId": propertyId,
+        "roomId": roomId,
+        "mode": mode,
+    }
+
+    # Call login mutation
+    [_, data] = await gqlCall(MUTATION_SET_ROOM_MODE, variables, tokens)
+    _LOGGER.info("Set room mode: %s", data)
+
+    return data
+
+
+async def setRoomTemperature(tokens, propertyId, roomId, temperature):
+    """Set the room mode."""
+
+    # Prepare variables
+    variables = {
+        "propertyId": propertyId,
+        "roomId": roomId,
+        "temperature": temperature,
+    }
+
+    # Call login mutation
+    [_, data] = await gqlCall(MUTATION_SET_ROOM_TEMPERATURE, variables, tokens)
+    _LOGGER.error("Set room temperature: %s", data)
 
     return data

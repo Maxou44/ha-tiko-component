@@ -3,7 +3,8 @@
     "name": "Tiko",
     "version": "1.0",
     "iot_class": "local_polling",
-    "documentation": "https://github.com/Maxou44",
+    "documentation": "https://github.com/Maxou44/ha-tiko-component",
+    "issue_tracker": "https://github.com/Maxou44/ha-tiko-component/issues",
     "requirements": [
         "requests"
     ],

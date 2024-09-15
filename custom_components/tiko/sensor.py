@@ -1,6 +1,7 @@
 import logging
 from .classes.TikoHumiditySensor import TikoHumiditySensor
 from .classes.TikoTemperatureSensor import TikoTemperatureSensor
+from .classes.TikoBatterySensor import TikoBatterySensor
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,6 +47,15 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                     property_id=property_id,
                     room=room,
                     type="temperature_target",
+                )
+            )
+
+            # Battery sensor
+            entities.append(
+                TikoBatterySensor(
+                    coordinator=coordinator,
+                    property_id=property_id,
+                    room=room,
                 )
             )
 

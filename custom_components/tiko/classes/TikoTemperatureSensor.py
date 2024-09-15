@@ -3,6 +3,9 @@ import logging
 from homeassistant.core import callback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.sensor import SensorEntity
+from homeassistant.const import UnitOfTemperature
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.const import PERCENTAGE
 
 from ..const import DOMAIN
 
@@ -19,7 +22,23 @@ class TikoTemperatureSensor(CoordinatorEntity, SensorEntity):
         self._type = type
         self._property_id = property_id
         self._coordinator = coordinator
-        _LOGGER.error("DEVICE DBG: %s - %s - %s", room, type, property_id)
+
+    # -------------------------------------------
+    # Helpers
+    # -------------------------------------------
+
+    def _get_room_data(self):
+        if self._coordinator.data is not None:
+            for prop in self._coordinator.data["data"]["properties"]:
+                if prop["id"] == self._property_id:
+                    for room in prop["rooms"]:
+                        if room["id"] == self._room["id"]:
+                            return room
+        return None
+
+    # -------------------------------------------
+    # Sensor properties
+    # -------------------------------------------
 
     @property
     def name(self):
@@ -31,50 +50,37 @@ class TikoTemperatureSensor(CoordinatorEntity, SensorEntity):
         return None
 
     @property
-    def state(self):
+    def native_value(self):
         """Returns the temperature of the sensor."""
-        if self._coordinator.data is not None:
-            for prop in self._coordinator.data["data"]["properties"]:
-                if prop["id"] == self._property_id:
-                    for room in prop["rooms"]:
-                        if room["id"] == self._room["id"]:
-                            if self._type == "temperature_target":
-                                return room["targetTemperatureDegrees"]
-                            if self._type == "temperature_current":
-                                return room["currentTemperatureDegrees"]
+        room = self._get_room_data()
+
+        if self._type == "temperature_target":
+            if (
+                room["mode"]["disableHeating"] is not True
+                or room["targetTemperatureDegrees"] > 0
+            ):
+                return room["targetTemperatureDegrees"]
+        if self._type == "temperature_current":
+            return room["currentTemperatureDegrees"]
         return None
 
     @property
     def unique_id(self):
         """Returns the unique ID of the sensor."""
         if self._type == "temperature_target":
-            _LOGGER.error(
-                "SENSOR_TEMP_ID: %s",
-                f"{self._property_id}_{self._room["id"]}_temperature_target",
-            )
             return f"{self._property_id}_{self._room["id"]}_temperature_target"
         if self._type == "temperature_current":
-            _LOGGER.error(
-                "SENSOR_TEMP_ID: %s",
-                f"{self._property_id}_{self._room["id"]}_temperature_current",
-            )
             return f"{self._property_id}_{self._room["id"]}_temperature_current"
         return None
 
     @property
     def device_info(self):
         """Returns device information."""
-        if self._room is None:
-            return {
-                "identifiers": {(DOMAIN, self._property_id)},
-                "name": "General",
-                "manufacturer": "Tiko",
-                "model": "Tiko Equipment",
-                "sw_version": "1.0",
-            }
         return {
-            "identifiers": {(DOMAIN, self._room["id"])},
-            "name": self._room["name"],
+            "identifiers": {(DOMAIN, self._property_id)}
+            if self._room is None
+            else {(DOMAIN, self._room["id"])},
+            "name": "General" if self._room is None else self._room["name"],
             "manufacturer": "Tiko",
             "model": "Tiko Equipment",
             "sw_version": "1.0",
@@ -83,18 +89,14 @@ class TikoTemperatureSensor(CoordinatorEntity, SensorEntity):
     @property
     def device_class(self):
         """Returns the type of value that is being measured."""
-        return "temperature"
+        return SensorDeviceClass.TEMPERATURE
 
     @property
-    def unit_of_measurement(self):
+    def native_unit_of_measurement(self):
         """Returns the unit of measurement that is being used."""
-        return "°C"
+        return UnitOfTemperature.CELSIUS
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        data = self.coordinator.data
-        # _LOGGER.error("SENSOR: %s", data)
-
-    async def async_update(self):
         self.async_write_ha_state()
