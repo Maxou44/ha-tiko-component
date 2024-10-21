@@ -21,14 +21,15 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         property_id = prop["id"]
 
         for room in prop["rooms"]:
-            # Humidity sensor
-            entities.append(
-                TikoHumiditySensor(
-                    coordinator=coordinator,
-                    property_id=property_id,
-                    room=room,
+            if room["humidity"] is not None:
+                # Humidity sensor
+                entities.append(
+                    TikoHumiditySensor(
+                        coordinator=coordinator,
+                        property_id=property_id,
+                        room=room,
+                    )
                 )
-            )
 
             # Current temperature sensor
             entities.append(
@@ -51,13 +52,14 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             )
 
             # Battery sensor
-            entities.append(
-                TikoBatterySensor(
-                    coordinator=coordinator,
-                    property_id=property_id,
-                    room=room,
+            if room["sensors"] > 0:
+                entities.append(
+                    TikoBatterySensor(
+                        coordinator=coordinator,
+                        property_id=property_id,
+                        room=room,
+                    )
                 )
-            )
 
     # Push sensors to HA
     async_add_entities(entities, update_before_add=True)

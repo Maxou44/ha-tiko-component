@@ -25,6 +25,7 @@ query HA_GET_DATA {
       currentTemperatureDegrees
       targetTemperatureDegrees
       humidity
+      sensors
       mode {
         boost
         absence
