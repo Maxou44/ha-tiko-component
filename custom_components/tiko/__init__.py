@@ -5,6 +5,7 @@ from datetime import timedelta
 
 _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = timedelta(seconds=30)
+from .const import CONF_API_URL
 
 
 async def async_setup_entry(hass, config_entry):
@@ -45,3 +46,5 @@ async def async_unload_entry(hass, config_entry):
     # Clean HASS object
     if entry_id in hass.data[DOMAIN]:
         hass.data[DOMAIN].pop(entry_id)
+
+    return True

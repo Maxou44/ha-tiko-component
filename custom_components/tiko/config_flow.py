@@ -1,13 +1,16 @@
 import voluptuous as vol
-from .api import login
-from homeassistant import config_entries
-from homeassistant.core import callback
-from homeassistant.const import (
-    CONF_USERNAME,
-    CONF_PASSWORD,
-)
 
-from .const import DOMAIN
+from homeassistant import config_entries
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.core import callback
+
+from .api import login
+from .const import CONF_API_URL, DOMAIN
+
+API_OPTIONS = {
+    "https://particuliers-tiko.fr/api/v3/graphql/": "Tiko.fr",
+    "https://tiko.ch/api/v3/graphql/": "Tiko.ch",
+}
 
 
 class TikoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -21,13 +24,15 @@ class TikoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         self.username = ""
         self.password = ""
+        self.api = None
 
         if user_input is not None:
+            self.api = user_input[CONF_API_URL]
             self.username = user_input[CONF_USERNAME]
             self.password = user_input[CONF_PASSWORD]
 
             # Try to login
-            tokens = await login(self.username, self.password)
+            tokens = await login(self.api, self.username, self.password)
             if not tokens:
                 errors["base"] = "auth"
             else:
@@ -36,6 +41,7 @@ class TikoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data={
                         CONF_USERNAME: self.username,
                         CONF_PASSWORD: self.password,
+                        CONF_API_URL: self.api,
                     },
                 )
 
@@ -43,6 +49,10 @@ class TikoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
+                    vol.Optional(
+                        CONF_API_URL,
+                        default="https://particuliers-tiko.fr/api/v3/graphql/",
+                    ): vol.In(API_OPTIONS),
                     vol.Required(CONF_USERNAME, default=self.username): str,
                     vol.Required(CONF_PASSWORD, default=self.password): str,
                 }

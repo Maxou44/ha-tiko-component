@@ -1,5 +1,5 @@
 # Tiko
-Composant personnalisé pour Home Assistant permettant d'interagir avec les radiateurs connectés via Tiko.
+Composant personnalisé pour Home Assistant permettant d'interagir avec les radiateurs connectés via Tiko, que ce soit via Tiko.fr ou Tiko.ch.
 
 ## Introduction
 J'ai développé cette intégration car toutes les solutions existantes pour Tiko nécessitaient un composant additionnel en NodeJS ou en PHP pour gérer la communication avec l'API de Tiko.

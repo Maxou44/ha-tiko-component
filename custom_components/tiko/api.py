@@ -8,12 +8,15 @@ from .queries import (
     QUERY_GET_DATA,
 )
 
-GQL_API_URL = "https://particuliers-tiko.fr/api/v3/graphql/"
 _LOGGER = logging.getLogger(__name__)
 
 
-async def gqlCall(query, variables=None, tokens=None):
+async def gqlCall(apiUrl, query, variables=None, tokens=None):
     """Call the GraphQL API using auth tokens."""
+
+    gqlApi = (
+        apiUrl if apiUrl is not None else "https://particuliers-tiko.fr/api/v3/graphql/"
+    )
 
     # Generate headers
     headers = {
@@ -34,9 +37,7 @@ async def gqlCall(query, variables=None, tokens=None):
     async with aiohttp.ClientSession() as session:
         try:
             # Exec HTTP POST query
-            async with session.post(
-                GQL_API_URL, json=payload, headers=headers
-            ) as response:
+            async with session.post(gqlApi, json=payload, headers=headers) as response:
                 # If not sucessful
                 if response.status != 200:
                     _LOGGER.error(
@@ -70,7 +71,7 @@ async def gqlCall(query, variables=None, tokens=None):
             return None
 
 
-async def login(email, password):
+async def login(apiUrl, email, password):
     """Use login and password to authentificate the user and return tokens."""
 
     # Prepare POST data
@@ -82,7 +83,7 @@ async def login(email, password):
     }
 
     # Call login mutation
-    [reqTokens, data] = await gqlCall(MUTATION_LOGIN, variables)
+    [reqTokens, data] = await gqlCall(apiUrl, MUTATION_LOGIN, variables)
 
     # Login failed
     if data["data"]["logIn"] is None:
@@ -99,17 +100,17 @@ async def login(email, password):
     return tokens
 
 
-async def getData(tokens=None):
+async def getData(apiUrl, tokens=None):
     """Fetch all devices informations."""
 
     # Call login mutation
-    [_, data] = await gqlCall(QUERY_GET_DATA, {}, tokens)
+    [_, data] = await gqlCall(apiUrl, QUERY_GET_DATA, {}, tokens)
     _LOGGER.info("Data: %s", data)
 
     return data
 
 
-async def setRoomMode(tokens, propertyId, roomId, mode):
+async def setRoomMode(apiUrl, tokens, propertyId, roomId, mode):
     """Set the room mode."""
 
     # Prepare variables
@@ -120,13 +121,13 @@ async def setRoomMode(tokens, propertyId, roomId, mode):
     }
 
     # Call login mutation
-    [_, data] = await gqlCall(MUTATION_SET_ROOM_MODE, variables, tokens)
+    [_, data] = await gqlCall(apiUrl, MUTATION_SET_ROOM_MODE, variables, tokens)
     _LOGGER.info("Set room mode: %s", data)
 
     return data
 
 
-async def setRoomTemperature(tokens, propertyId, roomId, temperature):
+async def setRoomTemperature(apiUrl, tokens, propertyId, roomId, temperature):
     """Set the room mode."""
 
     # Prepare variables
@@ -137,7 +138,7 @@ async def setRoomTemperature(tokens, propertyId, roomId, temperature):
     }
 
     # Call login mutation
-    [_, data] = await gqlCall(MUTATION_SET_ROOM_TEMPERATURE, variables, tokens)
+    [_, data] = await gqlCall(apiUrl, MUTATION_SET_ROOM_TEMPERATURE, variables, tokens)
     _LOGGER.error("Set room temperature: %s", data)
 
     return data
