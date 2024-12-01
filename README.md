@@ -26,6 +26,7 @@ Pour chaque pièce disponible dans Tiko, le module créera :
 - Un capteur "Target temperature" pour la température cible.
 - Un capteur "Current humidity" pour l'humidité actuelle.
 - Un capteur binaire "Battery" pour indiquer le niveau de batterie faible du capteur de température.
+- Un capteur "Energy Consumption" Pour mesurer la consommation électrique
 - Une entité thermostat pour la gestion du chauffage.
 
 ### L'entitée thermostat

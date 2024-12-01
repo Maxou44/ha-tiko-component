@@ -6,6 +6,7 @@ from .queries import (
     MUTATION_SET_ROOM_MODE,
     MUTATION_SET_ROOM_TEMPERATURE,
     QUERY_GET_DATA,
+    QUERY_GET_CONSUMPTION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -72,32 +73,48 @@ async def gqlCall(apiUrl, query, variables=None, tokens=None):
 
 
 async def login(apiUrl, email, password):
-    """Use login and password to authentificate the user and return tokens."""
+    """Use login and password to authenticate the user and return tokens."""
+    try:
+        # Prepare POST data
+        variables = {
+            "email": email,
+            "password": password,
+            "langCode": "fr",
+            "retainSession": True,
+        }
 
-    # Prepare POST data
-    variables = {
-        "email": email,
-        "password": password,
-        "langCode": "fr",
-        "retainSession": True,
-    }
+        # Call login mutation
+        [reqTokens, data] = await gqlCall(apiUrl, MUTATION_LOGIN, variables)
 
-    # Call login mutation
-    [reqTokens, data] = await gqlCall(apiUrl, MUTATION_LOGIN, variables)
+        if not data:
+            _LOGGER.error("No response data from login request")
+            return False
 
-    # Login failed
-    if data["data"]["logIn"] is None:
+        if "errors" in data:
+            _LOGGER.error("Login errors: %s", data["errors"])
+            return False
+
+        if "data" not in data or "logIn" not in data["data"] or data["data"]["logIn"] is None:
+            _LOGGER.error("Invalid login response structure")
+            return False
+
+        # Extract and merge user informations
+        tokens = {
+            "account_id": data["data"]["logIn"]["user"]["id"],
+            "token": data["data"]["logIn"]["token"],
+            "member_space": reqTokens.get("member_space"),
+            "csrf_token": reqTokens.get("csrf_token"),
+        }
+
+        if not all(tokens.values()):
+            _LOGGER.error("Missing required tokens in response")
+            return False
+
+        return tokens
+
+    except Exception as error:
+        _LOGGER.error("Login error: %s", error)
         return False
-
-    # Extract and merge user informations
-    tokens = {
-        "account_id": data["data"]["logIn"]["user"]["id"],
-        "token": data["data"]["logIn"]["token"],
-        "member_space": reqTokens["member_space"],
-        "csrf_token": reqTokens["csrf_token"],
-    }
-
-    return tokens
 
 
 async def getData(apiUrl, tokens=None):
@@ -141,4 +158,18 @@ async def setRoomTemperature(apiUrl, tokens, propertyId, roomId, temperature):
     [_, data] = await gqlCall(apiUrl, MUTATION_SET_ROOM_TEMPERATURE, variables, tokens)
     _LOGGER.error("Set room temperature: %s", data)
 
+    return data
+
+async def getConsumption(apiUrl, tokens, propertyId, start, end, resolution="h"):
+    """Fetch consumption data for a property."""
+    variables = {
+        "propertyId": propertyId,
+        "timestampStart": start,
+        "timestampEnd": end,
+        "resolution": resolution
+    }
+    
+    [_, data] = await gqlCall(apiUrl, QUERY_GET_CONSUMPTION, variables, tokens)
+    _LOGGER.info("Consumption data: %s", data)
+    
     return data

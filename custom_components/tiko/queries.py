@@ -78,3 +78,30 @@ mutation HA_SET_ROOM_TEMPERATURE($propertyId: Int!, $roomId: Int!, $temperature:
   }
 }
 """
+
+QUERY_GET_CONSUMPTION = """
+query GET_RTP_CURRENT_MONTH_CONSUMPTION_BY_ROOM($propertyId: Int!, $timestampStart: BigInt!, $timestampEnd: BigInt!, $resolution: String!) {
+  property(id: $propertyId) {
+    id
+    fastConsumption(
+      start: $timestampStart
+      end: $timestampEnd
+      resolution: $resolution
+    ) {
+      energyKwh
+      start
+      end
+      resolution
+      roomsConsumption {
+        id
+        name
+        energyKwh
+        color
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+"""

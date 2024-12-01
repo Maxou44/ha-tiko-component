@@ -2,6 +2,7 @@ import logging
 from .classes.TikoHumiditySensor import TikoHumiditySensor
 from .classes.TikoTemperatureSensor import TikoTemperatureSensor
 from .classes.TikoBatterySensor import TikoBatterySensor
+from .classes.TikoConsumptionSensor import TikoConsumptionSensor
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -13,7 +14,11 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     # Get Tiko data
     coordinator = hass.data[DOMAIN][config_entry.entry_id]
     tiko_data = coordinator.data
-    # _LOGGER.error("tiko_data: %s", tiko_data)
+
+    # Check if we have valid data
+    if not tiko_data or "data" not in tiko_data or "properties" not in tiko_data["data"]:
+        _LOGGER.warning("No Tiko data available during sensor setup, waiting for first update")
+        return
 
     # For each property
     entities = []
@@ -60,6 +65,15 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                         room=room,
                     )
                 )
+                
+            entities.append(
+                TikoConsumptionSensor(
+                    coordinator=coordinator,
+                    property_id=property_id,
+                    room=room,
+                )
+            )
 
     # Push sensors to HA
-    async_add_entities(entities, update_before_add=True)
+    if entities:
+        async_add_entities(entities, update_before_add=True)
