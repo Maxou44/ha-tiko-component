@@ -14,5 +14,43 @@
         "error": {
             "auth": "Your email or password are incorrect."
         }
+    },
+    "entity": {
+        "state_attributes": {
+            "preset_mode": {
+                "state": {
+                    "night": "Night",
+                    "frost": "Frost"
+                }
+            }
+        }
+    },
+    "preset_modes": {
+        "night": {
+            "icon": "mdi:weather-night"
+        },
+        "frost": {
+            "icon": "mdi:snowflake"
+        }
+    },
+    "entity_component": {
+        "_": {
+            "state_attributes": {
+                "preset_mode": {
+                    "state": {
+                        "frost": "Frost",
+                        "night": "Night"
+                    }
+                }
+            }
+        },
+        "state_attributes": {
+            "preset_mode": {
+                "state": {
+                    "frost": "Frost",
+                    "night": "Night"
+                }
+            }
+        }
     }
 }

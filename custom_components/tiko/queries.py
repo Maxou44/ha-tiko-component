@@ -27,9 +27,10 @@ query HA_GET_DATA {
       humidity
       sensors
       mode {
-        boost
+        comfort
         absence
         frost
+        sleep
         disableHeating
         __typename
       }
@@ -45,14 +46,38 @@ query HA_GET_DATA {
 }
 """
 
+QUERY_GET_CONSUMPTION_DATA = """
+query HA_GET_CONSUMPTION_DATA($timestampStart: BigInt!, $timestampEnd: BigInt!, $resolution: String!) {
+  properties {
+    id
+    fastConsumption(
+      start: $timestampStart
+      end: $timestampEnd
+      resolution: $resolution
+    ) {
+      roomsConsumption {
+        id
+        name
+        energyKwh
+        energyWh
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+"""
+
 MUTATION_SET_ROOM_MODE = """
-mutation HA_SET_ROOM_MODE($propertyId: Int!, $roomId: Int!, $mode: String!) {
-  setRoomMode(input: {propertyId: $propertyId, roomId: $roomId, mode: $mode}) {
+mutation HA_SET_ROOM_MODE($propertyId: Int!, $roomId: Int!, $mode: String) {
+  activateRoomMode(input: {propertyId: $propertyId, roomId: $roomId, mode: $mode}) {
     id
     mode {
-      boost
+      comfort
       absence
       frost
+      sleep
       disableHeating
       __typename
     }

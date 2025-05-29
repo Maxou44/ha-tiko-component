@@ -1,17 +1,27 @@
 import logging
-from .classes.TikoHumiditySensor import TikoHumiditySensor
-from .classes.TikoTemperatureSensor import TikoTemperatureSensor
 from .classes.TikoClimate import TikoClimate
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up Tiko climate based on a config entry."""
 
     # Get Tiko data
-    coordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator = hass.data[DOMAIN][config_entry.entry_id][0]
     tiko_data = coordinator.data
+
+    # Check if we have valid data
+    if (
+        not tiko_data
+        or "data" not in tiko_data
+        or "properties" not in tiko_data["data"]
+    ):
+        _LOGGER.warning(
+            "No Tiko data available during climate setup, waiting for first update"
+        )
+        return
 
     # For each property
     entities = []
@@ -29,4 +39,5 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             )
 
     # Push sensors to HA
-    async_add_entities(entities, update_before_add=True)
+    if entities:
+        async_add_entities(entities, update_before_add=True)

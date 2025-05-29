@@ -1,9 +1,8 @@
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
-    PRESET_AWAY,
-    PRESET_BOOST,
     PRESET_ECO,
     PRESET_NONE,
+    PRESET_COMFORT,
     ClimateEntityFeature,
     HVACAction,
     HVACMode,
@@ -13,6 +12,9 @@ from homeassistant.core import callback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from ..const import DOMAIN
+
+PRESET_NIGHT = "night"
+PRESET_FROST = "frost"
 
 
 class TikoClimate(CoordinatorEntity, ClimateEntity):
@@ -52,7 +54,7 @@ class TikoClimate(CoordinatorEntity, ClimateEntity):
     @property
     def unique_id(self):
         """Returns the unique ID of the climate."""
-        return f"{self._property_id}_{self._room["id"]}_climate"
+        return f"{self._property_id}_{self._room['id']}_climate"
 
     @property
     def device_info(self):
@@ -108,7 +110,7 @@ class TikoClimate(CoordinatorEntity, ClimateEntity):
         if room is not None:
             if room["status"]["heatingOperating"]:
                 return HVACAction.HEATING
-            if room["mode"]["disableHeating"] or room["targetTemperatureDegrees"] <= 0:
+            if room["mode"]["disableHeating"]:
                 return HVACAction.OFF
             return HVACAction.IDLE
         return None
@@ -118,7 +120,7 @@ class TikoClimate(CoordinatorEntity, ClimateEntity):
         """Return the current operation mode."""
         room = self._get_room_data()
         if room is not None:
-            if room["mode"]["disableHeating"] or room["targetTemperatureDegrees"] <= 0:
+            if room["mode"]["disableHeating"]:
                 return HVACMode.OFF
             return HVACMode.HEAT
         return None
@@ -160,20 +162,22 @@ class TikoClimate(CoordinatorEntity, ClimateEntity):
         """Return the current preset mode."""
         room = self._get_room_data()
         if room is not None:
-            if room["mode"]["disableHeating"] or room["targetTemperatureDegrees"] <= 0:
+            if room["mode"]["disableHeating"]:
                 return PRESET_NONE
+            if room["mode"]["comfort"]:
+                return PRESET_COMFORT
             if room["mode"]["absence"]:
-                return PRESET_AWAY
-            if room["mode"]["boost"]:
-                return PRESET_BOOST
-            if room["mode"]["frost"]:
                 return PRESET_ECO
+            if room["mode"]["sleep"]:
+                return PRESET_NIGHT
+            if room["mode"]["frost"]:
+                return PRESET_FROST
         return PRESET_NONE
 
     @property
     def preset_modes(self):
         """Return the list of available preset modes."""
-        return [PRESET_NONE, PRESET_AWAY, PRESET_BOOST, PRESET_ECO]
+        return [PRESET_NONE, PRESET_COMFORT, PRESET_ECO, PRESET_NIGHT, PRESET_FROST]
 
     @property
     def swing_mode(self):
@@ -194,14 +198,6 @@ class TikoClimate(CoordinatorEntity, ClimateEntity):
     def target_temperature(self):
         """Return the temperature we try to reach."""
         room = self._get_room_data()
-        if room["mode"]["disableHeating"] or room["targetTemperatureDegrees"] <= 0:
-            return self._target_temperature
-        if room["mode"]["absence"]:
-            return 17
-        if room["mode"]["boost"]:
-            return 25
-        if room["mode"]["frost"]:
-            return 7
         return room["targetTemperatureDegrees"] if room is not None else None
 
     @property
@@ -232,27 +228,18 @@ class TikoClimate(CoordinatorEntity, ClimateEntity):
         """Set new target hvac mode."""
         room = self._get_room_data()
 
-        # Disable it
-        if hvac_mode == HVACMode.OFF:
-            if room["mode"]["disableHeating"] or room["targetTemperatureDegrees"] <= 0:
-                return
-            else:
-                await self._coordinator.set_room_temperature(
-                    self._property_id,
-                    room["id"],
-                    0,  # Little trick, it's not possible to disable a specific heater, so we set the target temperature to 0, Tiko will consider it as disabled
+        if self._room is not None:
+            # Disable it
+            if hvac_mode == HVACMode.OFF:
+                await self._coordinator.set_room_mode(
+                    self._property_id, room["id"], "disableHeating"
                 )
 
-        # Enable it
-        if hvac_mode == HVACMode.HEAT:
-            if room["mode"]["disableHeating"] or room["targetTemperatureDegrees"] <= 0:
-                await self._coordinator.set_room_temperature(
-                    self._property_id,
-                    room["id"],
-                    self._target_temperature,
+            # Enable it
+            if hvac_mode == HVACMode.HEAT:
+                await self._coordinator.set_room_mode(
+                    self._property_id, room["id"], None
                 )
-            else:
-                return
 
     async def async_turn_on(self):
         """Turn the entity on."""
@@ -264,15 +251,15 @@ class TikoClimate(CoordinatorEntity, ClimateEntity):
 
     async def async_set_preset_mode(self, preset_mode):
         """Set new target preset mode."""
-
         value = False
-        if preset_mode == PRESET_NONE:
-            value = False
-        elif preset_mode == PRESET_AWAY:
-            value = "absence"
-        elif preset_mode == PRESET_BOOST:
-            value = "boost"
+
+        if preset_mode == PRESET_COMFORT:
+            value = "comfort"
         elif preset_mode == PRESET_ECO:
+            value = "absence"
+        elif preset_mode == PRESET_NIGHT:
+            value = "sleep"
+        elif preset_mode == PRESET_FROST:
             value = "frost"
 
         await self._coordinator.set_room_mode(

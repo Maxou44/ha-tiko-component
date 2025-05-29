@@ -1,11 +1,15 @@
 import logging
 from .const import DOMAIN
 from .classes.TikoDataUpdateCoordinator import TikoDataUpdateCoordinator
+from .classes.TikoConsumptionDataUpdateCoordinator import (
+    TikoConsumptionDataUpdateCoordinator,
+)
 from datetime import timedelta
 
 _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = timedelta(seconds=30)
-from .const import CONF_API_URL
+
+PLATFORMS = ["sensor", "climate"]
 
 
 async def async_setup_entry(hass, config_entry):
@@ -19,17 +23,20 @@ async def async_setup_entry(hass, config_entry):
 
     # Data coordinator setup
     coordinator = TikoDataUpdateCoordinator(hass, config_entry)
-    await coordinator.async_config_entry_first_refresh()
+    consumptionCoordinator = TikoConsumptionDataUpdateCoordinator(hass, config_entry)
 
-    # Store coordinator
-    hass.data[DOMAIN][entry_id] = coordinator
+    # Try to get initial data
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except Exception as err:
+        _LOGGER.error("Error getting initial data: %s", err)
+        return False
+
+    # Store coordinators
+    hass.data[DOMAIN][entry_id] = [coordinator, consumptionCoordinator]
 
     # Init entities
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setups(
-            config_entry, ["sensor", "climate"]
-        )
-    )
+    await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     # Indicate that the initialization was successful
     return True
@@ -43,8 +50,13 @@ async def async_unload_entry(hass, config_entry):
     if not isinstance(entry_id, str):
         entry_id = str(entry_id)
 
+    # Unload platforms
+    unload_ok = await hass.config_entries.async_unload_platforms(
+        config_entry, PLATFORMS
+    )
+
     # Clean HASS object
-    if entry_id in hass.data[DOMAIN]:
+    if unload_ok and entry_id in hass.data[DOMAIN]:
         hass.data[DOMAIN].pop(entry_id)
 
-    return True
+    return unload_ok
