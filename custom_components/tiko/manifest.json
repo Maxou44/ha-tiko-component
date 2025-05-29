@@ -11,6 +11,5 @@
     "codeowners": [
         "@Maxou44"
     ],
-    "config_flow": true,
-    "image": "images/tiko.png"
+    "config_flow": true
 }
