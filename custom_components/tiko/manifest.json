@@ -1,15 +1,15 @@
 {
-    "domain": "tiko",
-    "name": "Tiko",
-    "version": "1.0",
-    "iot_class": "local_polling",
-    "documentation": "https://github.com/Maxou44/ha-tiko-component",
-    "issue_tracker": "https://github.com/Maxou44/ha-tiko-component/issues",
-    "requirements": [
-        "requests"
-    ],
-    "codeowners": [
-        "@Maxou44"
-    ],
-    "config_flow": true
+	"codeowners": [
+		"@Maxou44"
+	],
+	"config_flow": true,
+	"documentation": "https://github.com/Maxou44/ha-tiko-component",
+	"domain": "tiko",
+	"iot_class": "local_polling",
+	"issue_tracker": "https://github.com/Maxou44/ha-tiko-component/issues",
+	"name": "Tiko",
+	"requirements": [
+		"requests"
+	],
+	"version": "1.0"
 }
