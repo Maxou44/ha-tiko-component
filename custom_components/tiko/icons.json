@@ -1,0 +1,16 @@
+{
+    "entity": {
+        "climate": {
+            "tiko": {
+                "state_attributes": {
+                    "preset_mode": {
+                        "state": {
+                            "night": "mdi:weather-night",
+                            "frost": "mdi:snowflake"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
