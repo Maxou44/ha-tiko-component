@@ -23,11 +23,10 @@ class TikoClimate(CoordinatorEntity, ClimateEntity):
     def __init__(self, coordinator, property_id, room):
         """Climate initialization."""
         super().__init__(coordinator)
+        self._attr_translation_key = "tiko"
         self._room = room
         self._property_id = property_id
         self._coordinator = coordinator
-
-        self._target_temperature = 19
 
     # -------------------------------------------
     # Helpers
@@ -198,7 +197,11 @@ class TikoClimate(CoordinatorEntity, ClimateEntity):
     def target_temperature(self):
         """Return the temperature we try to reach."""
         room = self._get_room_data()
-        return room["targetTemperatureDegrees"] if room is not None else None
+        return (
+            room["targetTemperatureDegrees"]
+            if room is not None and room["targetTemperatureDegrees"] > 0
+            else None
+        )
 
     @property
     def target_temperature_high(self):
@@ -269,8 +272,6 @@ class TikoClimate(CoordinatorEntity, ClimateEntity):
     async def async_set_temperature(self, **kwargs):
         """Set new target temperature."""
         if ATTR_TEMPERATURE in kwargs:
-            if kwargs[ATTR_TEMPERATURE] > 0:
-                self._target_temperature = kwargs[ATTR_TEMPERATURE]
             await self._coordinator.set_room_temperature(
                 self._property_id,
                 self._room["id"],
