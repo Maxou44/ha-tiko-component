@@ -40,7 +40,7 @@ class TikoConsumptionSensor(CoordinatorEntity, SensorEntity):
             for prop in self._coordinator.data["data"]["properties"]:
                 if prop["id"] == self._property_id and "fastConsumption" in prop:
                     for room in prop["fastConsumption"]["roomsConsumption"]:
-                        if room["id"] == self._room["id"] and room["energyWh"] > 0:
+                        if room["id"] == self._room["id"] and room["energyWh"] > 10:
                             return room["energyWh"]
         return None
 
