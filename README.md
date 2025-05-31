@@ -6,10 +6,17 @@ J'ai développé cette intégration car toutes les solutions existantes pour Tik
 
 Ce module est développé directement en tant que composant Home Assistant, offrant ainsi une intégration optimale et une configuration via l'interface utilisateur. Les requêtes GraphQL ont été optimisées pour ne solliciter que les données strictement nécessaires auprès de Tiko, améliorant ainsi les performances et réduisant l'impact réseau.
 
-## Configuration
-Une fois avoir ajouté le module "tiko" dans votre dossier "custom_components" et redémarré Home Assistant, vous devriez pouvoir l'installer directement depuis le bouton "Ajouter une intégration".
+## Installation dans Home Assistant
 
-Quand le module sera stable, j'ajouterai l'installation avec HACS, n'hésitez pas à faire des retours en attendant.
+#### Avec HACS
+
+[![Ouvre votre instance Home Assistant et ajoute un dépôt dans la boutique communautaire Home Assistant.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=maxou44&repository=ha-tiko-component&category=integration)
+
+Plus d'informations sur HACS [ici](https://hacs.xyz/).
+
+#### Manuellement
+
+Téléchargez l'[intégration Tiko](https://github.com/Maxou44/ha-tiko-component/archive/refs/heads/master.zip) et décompressez le dossier `custom_components/tiko` dans le dossier de configuration de Home Assistant. Ensuite, redémarrez votre Home Assistant.
 
 ## Considérations
 Les données sont récupérées toutes les 30 secondes auprès de l'API de Tiko. Elles sont également récupérées immédiatement à chaque changement d'état dans Home Assistant, garantissant ainsi une meilleure précision.
