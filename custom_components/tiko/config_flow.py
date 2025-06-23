@@ -9,7 +9,7 @@ from .const import CONF_API_URL, DOMAIN
 
 API_OPTIONS = {
     "https://particuliers-tiko.fr/api/v3/graphql/": "Tiko.fr",
-    "https://tiko.ch/api/v3/graphql/": "Tiko.ch",
+    "https://portal-engie.tiko.ch/api/v3/graphql/": "Tiko.ch",
 }
 
 
