@@ -18,6 +18,10 @@ Plus d'informations sur HACS [ici](https://hacs.xyz/).
 
 Téléchargez l'[intégration Tiko](https://github.com/Maxou44/ha-tiko-component/archive/refs/heads/master.zip) et décompressez le dossier `custom_components/tiko` dans le dossier de configuration de Home Assistant. Ensuite, redémarrez votre Home Assistant.
 
+## Configuration
+
+Une fois le composant installé, rendez vous dans Paramètres > Appareils et services > Ajouter une intégration, puis sélectionnez Tiko, vous serez ensuite invités à rentrer votre email et votre mot de passe.
+
 ## Considérations
 Les données sont récupérées toutes les 30 secondes auprès de l'API de Tiko. Elles sont également récupérées immédiatement à chaque changement d'état dans Home Assistant, garantissant ainsi une meilleure précision.
 
