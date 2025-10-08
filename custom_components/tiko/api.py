@@ -135,13 +135,21 @@ async def getData(apiUrl, tokens=None):
 async def getConsumptionData(apiUrl, tokens=None):
     """Fetch all devices consumption informations."""
 
+    # Calculer minuit aujourd'hui
+    from datetime import datetime, time as dt_time
+
+    now = datetime.now()
+    midnight = datetime.combine(now.date(), dt_time.min)
+    timestamp_midnight = int(midnight.timestamp() * 1000)
+    timestamp_now = int(time.time() * 1000)
+
     # Get consumption data from API
     [_, data] = await gqlCall(
         apiUrl,
         QUERY_GET_CONSUMPTION_DATA,
         {
-            "timestampStart": "1609455600000",  # 2021-01-01
-            "timestampEnd": str(int((time.time() + 5 * 60) * 1000)),  # Now + 5 minutes
+            "timestampStart": str(timestamp_midnight),  # Depuis minuit aujourd'hui
+            "timestampEnd": str(timestamp_now),  # Maintenant
             "resolution": "d",
         },
         tokens,
