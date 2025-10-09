@@ -1,6 +1,8 @@
+"""Tiko API module - Optimized version."""
 import aiohttp
 import logging
 import time
+from datetime import datetime, time as dt_time
 
 from .queries import (
     MUTATION_LOGIN,
@@ -25,11 +27,12 @@ async def gqlCall(apiUrl, query, variables=None, tokens=None):
         "Content-Type": "application/json",
         "User-agent": "Mozilla/5.0 (Linux; Android 13; Pixel 4a Build/T1B3.221003.003; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/106.0.5249.126 Mobile Safari/537.36",
     }
-    if tokens and tokens["token"]:
+    if tokens and tokens.get("token"):
         headers["Authorization"] = f"Token {tokens['token']}"
-    if tokens and tokens["csrf_token"] and tokens["member_space"]:
+    if tokens and tokens.get("csrf_token") and tokens.get("member_space"):
         headers["Cookie"] = (
-            f"csrftoken={tokens['csrf_token']}; USER_SESSION_member_space={tokens['member_space']}"
+            f"csrftoken={tokens['csrf_token']}; "
+            f"USER_SESSION_member_space={tokens['member_space']}"
         )
 
     # Payload
@@ -40,23 +43,23 @@ async def gqlCall(apiUrl, query, variables=None, tokens=None):
         try:
             # Exec HTTP POST query
             async with session.post(gqlApi, json=payload, headers=headers) as response:
-                # If not sucessful
+                # If not successful
                 if response.status != 200:
                     _LOGGER.error(
                         "Request error %d: %s", response.status, await response.text()
                     )
                     return None
 
-                # Get tokens
+                # Get tokens from cookies
                 outTokens = {}
                 if (
-                    "csrftoken" in response.cookies
-                    and response.cookies["csrftoken"].value
+                        "csrftoken" in response.cookies
+                        and response.cookies["csrftoken"].value
                 ):
                     outTokens["csrf_token"] = response.cookies["csrftoken"].value
                 if (
-                    "USER_SESSION_member_space" in response.cookies
-                    and response.cookies["USER_SESSION_member_space"].value
+                        "USER_SESSION_member_space" in response.cookies
+                        and response.cookies["USER_SESSION_member_space"].value
                 ):
                     outTokens["member_space"] = response.cookies[
                         "USER_SESSION_member_space"
@@ -85,7 +88,13 @@ async def login(apiUrl, email, password):
         }
 
         # Call login mutation
-        [reqTokens, data] = await gqlCall(apiUrl, MUTATION_LOGIN, variables)
+        result = await gqlCall(apiUrl, MUTATION_LOGIN, variables)
+
+        if not result:
+            _LOGGER.error("No response from login request")
+            return False
+
+        reqTokens, data = result
 
         if not data:
             _LOGGER.error("No response data from login request")
@@ -96,14 +105,14 @@ async def login(apiUrl, email, password):
             return False
 
         if (
-            "data" not in data
-            or "logIn" not in data["data"]
-            or data["data"]["logIn"] is None
+                "data" not in data
+                or "logIn" not in data["data"]
+                or data["data"]["logIn"] is None
         ):
             _LOGGER.error("Invalid login response structure")
             return False
 
-        # Extract and merge user informations
+        # Extract and merge user information
         tokens = {
             "account_id": data["data"]["logIn"]["user"]["id"],
             "token": data["data"]["logIn"]["token"],
@@ -111,8 +120,8 @@ async def login(apiUrl, email, password):
             "csrf_token": reqTokens.get("csrf_token"),
         }
 
-        if not all(tokens.values()):
-            _LOGGER.error("Missing required tokens in response")
+        if not tokens.get("token"):
+            _LOGGER.error("Missing token in response")
             return False
 
         return tokens
@@ -123,44 +132,107 @@ async def login(apiUrl, email, password):
 
 
 async def getData(apiUrl, tokens=None):
-    """Fetch all devices informations."""
+    """Fetch all devices information."""
+    if not tokens:
+        _LOGGER.error("No tokens provided for getData")
+        return None
 
     # Get data from API
-    [_, data] = await gqlCall(apiUrl, QUERY_GET_DATA, {}, tokens)
-    _LOGGER.info("API::getData: %s", data)
+    result = await gqlCall(apiUrl, QUERY_GET_DATA, {}, tokens)
+
+    if not result:
+        return None
+
+    _, data = result
+    _LOGGER.debug("API::getData: %s", data)
 
     return data
 
 
-async def getConsumptionData(apiUrl, tokens=None):
-    """Fetch all devices consumption informations."""
+async def getConsumptionData(apiUrl, tokens=None, period="today"):
+    """
+    Fetch devices consumption information.
 
-    # Calculer minuit aujourd'hui
-    from datetime import datetime, time as dt_time
+    Args:
+        apiUrl: API endpoint URL
+        tokens: Authentication tokens
+        period: Period for consumption data
+            - "today": depuis minuit aujourd'hui
+            - "yesterday": hier complet
+            - "last_7_days": 7 derniers jours
+            - tuple (timestamp_start, timestamp_end): période personnalisée en ms
+
+    Returns:
+        Consumption data from API
+    """
+    if not tokens:
+        _LOGGER.error("No tokens provided for getConsumptionData")
+        return None
 
     now = datetime.now()
-    midnight = datetime.combine(now.date(), dt_time.min)
-    timestamp_midnight = int(midnight.timestamp() * 1000)
-    timestamp_now = int(time.time() * 1000)
+
+    # Calculate timestamps based on period
+    if period == "today":
+        midnight = datetime.combine(now.date(), dt_time.min)
+        timestamp_start = int(midnight.timestamp() * 1000)
+        timestamp_end = int(time.time() * 1000)
+        resolution = "h"  # Hourly for current day
+    elif period == "yesterday":
+        from datetime import timedelta
+        yesterday = now - timedelta(days=1)
+        midnight_yesterday = datetime.combine(yesterday.date(), dt_time.min)
+        midnight_today = datetime.combine(now.date(), dt_time.min)
+        timestamp_start = int(midnight_yesterday.timestamp() * 1000)
+        timestamp_end = int(midnight_today.timestamp() * 1000)
+        resolution = "h"
+    elif period == "last_7_days":
+        from datetime import timedelta
+        week_ago = now - timedelta(days=7)
+        timestamp_start = int(week_ago.timestamp() * 1000)
+        timestamp_end = int(time.time() * 1000)
+        resolution = "d"  # Daily for week view
+    elif isinstance(period, tuple) and len(period) == 2:
+        timestamp_start, timestamp_end = period
+        # Auto-detect resolution based on period length
+        days_diff = (timestamp_end - timestamp_start) / (1000 * 60 * 60 * 24)
+        resolution = "h" if days_diff <= 2 else "d"
+    else:
+        _LOGGER.error("Invalid period: %s", period)
+        return None
+
+    _LOGGER.debug(
+        "Fetching consumption from %s to %s with resolution %s",
+        timestamp_start,
+        timestamp_end,
+        resolution,
+    )
 
     # Get consumption data from API
-    [_, data] = await gqlCall(
+    result = await gqlCall(
         apiUrl,
         QUERY_GET_CONSUMPTION_DATA,
         {
-            "timestampStart": str(timestamp_midnight),  # Depuis minuit aujourd'hui
-            "timestampEnd": str(timestamp_now),  # Maintenant
-            "resolution": "d",
+            "timestampStart": str(timestamp_start),
+            "timestampEnd": str(timestamp_end),
+            "resolution": resolution,
         },
         tokens,
     )
-    _LOGGER.info("API::getConsumptionData: %s", data)
+
+    if not result:
+        return None
+
+    _, data = result
+    _LOGGER.debug("API::getConsumptionData: %s", data)
 
     return data
 
 
 async def setRoomMode(apiUrl, tokens, propertyId, roomId, mode):
     """Set the room mode."""
+    if not tokens:
+        _LOGGER.error("No tokens provided for setRoomMode")
+        return None
 
     # Prepare variables
     variables = {
@@ -169,15 +241,23 @@ async def setRoomMode(apiUrl, tokens, propertyId, roomId, mode):
         "mode": mode,
     }
 
-    # Call login mutation
-    [_, data] = await gqlCall(apiUrl, MUTATION_SET_ROOM_MODE, variables, tokens)
-    _LOGGER.info("API::setRoomMode: %s", data)
+    # Call mutation
+    result = await gqlCall(apiUrl, MUTATION_SET_ROOM_MODE, variables, tokens)
+
+    if not result:
+        return None
+
+    _, data = result
+    _LOGGER.debug("API::setRoomMode: %s", data)
 
     return data
 
 
 async def setRoomTemperature(apiUrl, tokens, propertyId, roomId, temperature):
     """Set the room temperature."""
+    if not tokens:
+        _LOGGER.error("No tokens provided for setRoomTemperature")
+        return None
 
     # Prepare variables
     variables = {
@@ -186,8 +266,13 @@ async def setRoomTemperature(apiUrl, tokens, propertyId, roomId, temperature):
         "temperature": temperature,
     }
 
-    # Call login mutation
-    [_, data] = await gqlCall(apiUrl, MUTATION_SET_ROOM_TEMPERATURE, variables, tokens)
-    _LOGGER.info("API::setRoomTemperature: %s", data)
+    # Call mutation
+    result = await gqlCall(apiUrl, MUTATION_SET_ROOM_TEMPERATURE, variables, tokens)
+
+    if not result:
+        return None
+
+    _, data = result
+    _LOGGER.debug("API::setRoomTemperature: %s", data)
 
     return data
