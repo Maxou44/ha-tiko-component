@@ -4,7 +4,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import UnitOfTemperature
-from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.const import PERCENTAGE
 
 from ..const import DOMAIN
@@ -90,6 +90,11 @@ class TikoTemperatureSensor(CoordinatorEntity, SensorEntity):
     def device_class(self):
         """Returns the type of value that is being measured."""
         return SensorDeviceClass.TEMPERATURE
+
+    @property
+    def state_class(self):
+        """Returns the state class of the sensor."""
+        return SensorStateClass.MEASUREMENT
 
     @property
     def native_unit_of_measurement(self):

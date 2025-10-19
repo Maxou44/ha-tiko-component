@@ -5,6 +5,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
+    SensorStateClass,
 )
 from homeassistant.const import PERCENTAGE
 
@@ -63,6 +64,11 @@ class TikoHumiditySensor(CoordinatorEntity, SensorEntity):
     def device_class(self):
         """Returns the type of value that is being measured."""
         return SensorDeviceClass.HUMIDITY
+
+    @property
+    def state_class(self):
+        """Returns the state class of the sensor."""
+        return SensorStateClass.MEASUREMENT
 
     @property
     def native_unit_of_measurement(self):
